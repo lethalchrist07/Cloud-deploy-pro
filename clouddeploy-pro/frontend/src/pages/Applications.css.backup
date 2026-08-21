@@ -1,0 +1,251 @@
+.applications-page {
+  padding: 1.5rem;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.page-title {
+  flex: 1;
+  min-width: 250px;
+}
+
+.page-title h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  color: #00F2FE;
+}
+
+.page-description {
+  color: #94A3B8;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.page-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.applications-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.25rem;
+}
+
+.application-card {
+  background: #161430;
+  border: 1px solid rgba(139, 92, 246, 0.15);
+  border-radius: 0.5rem;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.application-card:hover {
+  border-color: rgba(139, 92, 246, 0.25);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.application-card.selected {
+  border-color: #00F2FE;
+  box-shadow: 0 0 0 2px rgba(0, 242, 254, 0.2);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 1rem 1.25rem;
+  background: rgba(139, 92, 246, 0.05);
+  border-bottom: 1px solid rgba(139, 92, 246, 0.1);
+}
+
+.card-title {
+  display: flex;
+  flex-direction: column;
+}
+
+.card-title h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0 0 0.25rem 0;
+  color: #F8FAFC;
+}
+
+.app-meta {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.2rem 0.5rem;
+  border-radius: 0.25rem;
+}
+
+.badge.development {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10B981;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.badge.staging {
+  background: rgba(245, 158, 11, 0.1);
+  color: #F59E0B;
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.badge.production {
+  background: rgba(220, 38, 38, 0.1);
+  color: #EF4444;
+  border: 1px solid rgba(220, 38, 38, 0.2);
+}
+
+.card-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-icon {
+  background: transparent;
+  border: none;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.375rem;
+  color: #94A3B8;
+  transition: all 0.2s ease;
+}
+
+.btn-icon:hover {
+  background: rgba(139, 92, 246, 0.1);
+  color: #00F2FE;
+}
+
+.card-body {
+  padding: 1rem 1.25rem;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(139, 92, 246, 0.05);
+}
+
+.info-row:last-child {
+  margin-bottom: 0;
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.info-label {
+  font-size: 0.8rem;
+  color: #94A3B8;
+  font-weight: 500;
+}
+
+.info-value {
+  font-size: 0.85rem;
+  color: #F8FAFC;
+  word-break: break-all;
+}
+
+.repo-link {
+  color: #00F2FE;
+  text-decoration: none;
+  border-bottom: 1px dashed #00F2FE;
+}
+
+.repo-link:hover {
+  border-style: solid;
+}
+
+.status-connected {
+  color: #10B981;
+}
+
+.status-disconnected {
+  color: #EF4444;
+}
+
+.status-icon {
+  margin-right: 0.25rem;
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 3rem 1.5rem;
+  grid-column: 1 / -1;
+}
+
+.empty-state h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: #F8FAFC;
+}
+
+.empty-state-description {
+  color: #94A3B8;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+/* Loading Indicator */
+.loading-indicator {
+  text-align: center;
+  padding: 3rem;
+  color: #94A3B8;
+  font-style: italic;
+  grid-column: 1 / -1;
+}
+
+/* Error Alert */
+.error-alert {
+  background: rgba(220, 38, 38, 0.05);
+  border: 1px solid rgba(220, 38, 38, 0.15);
+  border-radius: 0.375rem;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.error-alert .error-message {
+  color: #EF4444;
+  font-size: 0.875rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .page-actions {
+    justify-content: flex-end;
+    width: 100%;
+  }
+
+  .applications-grid {
+    grid-template-columns: 1fr;
+  }
+}

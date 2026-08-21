@@ -1,0 +1,1 @@
+<!DOCTYPE html><html><body><script>fetch('http://localhost:8000/metrics').then(r => r.json()).then(data => { console.log('Success:', data); document.body.innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>'; }).catch(err => { console.error('Error:', err); document.body.innerHTML = '<p style="color:red">Error: ' + err.message + '</p>'; });</script></body></html>

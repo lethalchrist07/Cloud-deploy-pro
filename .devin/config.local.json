@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Exec(Get-ChildItem)",
+      "Exec(python)",
+      "Exec(netstat)",
+      "Exec(curl)",
+      "Exec('{\"repository_url\": \"https://github.com/facebook/react\", \"branch\": \"main\"}')",
+      "Exec(pip install)",
+      "Exec(npm run)",
+      "Exec(npx tsc)",
+      "Exec(Remove-Item)",
+      "Exec(timeout)"
+    ]
+  }
+}

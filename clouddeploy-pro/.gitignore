@@ -1,0 +1,75 @@
+# Dependencies
+/node_modules
+/__pycache__
+*.py[cod]
+*$py.class
+venv/
+ENV/
+env/
+.venv
+.ENV
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+terraform.tfstate
+terraform.tfstate.backup
+.terraform.lock.hcl
+
+# Docker
+docker-compose.override.yml
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage
+coverage/
+.hypothesis/
+.pytest_cache/
+htmlcov/
+
+# Build
+dist/
+build/
+*.egg-info/
+.expo/
+web/
+web-build/
+tmp/
+temp/
+
+# Secrets
+.env.local
+.env.*.local
+
+# Misc
+.cache
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+.package-lock.json
+yarn.lock
+package-lock.json
+ Pipfile
+Pipfile.lock
+ poetry.lock

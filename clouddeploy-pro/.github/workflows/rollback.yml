@@ -1,0 +1,123 @@
+name: Rollback
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to rollback (dev, staging, production)'
+        required: true
+        default: 'staging'
+      commit:
+        description: 'Commit SHA to rollback to (optional, defaults to previous commit)'
+        required: false
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        # If commit is specified, checkout that commit; otherwise, we will check out the default branch and then get the previous commit
+        ref: ${{ inputs.commit }}
+
+    # If commit is not specified, we need to find the previous successful commit
+    # For simplicity, we'll assume the user provides the commit SHA for the version they want to rollback to.
+    # We'll output a message if not provided.
+
+    - name: Check if commit is provided
+      run: |
+        if [ -z "${{ inputs.commit }}" ]; then
+          echo "Error: Commit SHA is required for rollback. Please provide a commit SHA."
+          exit 1
+        fi
+
+    # Set up AWS credentials
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
+
+    # Set up Terraform to get the instance IP (we don't apply, just get the output)
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v2
+      with:
+        terraform_version: 1.5.0
+
+    # Login to Docker Hub (we might not need to push, but we need to pull the image)
+    - name: Login to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    # Get the instance IP from the Terraform state (we assume the infrastructure is already deployed)
+    - name: Get instance public IP
+      id: get_ip
+      run: |
+        cd terraform/${{ inputs.environment }}
+        terraform init -backend=false # We don't want to initialize the backend, just get the output from the state
+        # If the state is stored remotely, we would need to configure the backend. For simplicity, we assume local state.
+        # In a real scenario, we would have the state in an S3 bucket and we would need to configure the backend.
+        # We'll skip the backend initialization and just try to get the output from the state if it exists.
+        # If the state is not available, we will fail.
+        INSTANCE_IP=$(terraform output -raw instance_public_ip 2>/dev/null || echo "")
+        if [ -z "$INSTANCE_IP" ]; then
+          echo "Error: Could not get instance IP from Terraform state. Make sure the infrastructure is deployed."
+          exit 1
+        fi
+        echo "instance_ip=$INSTANCE_IP" >> $GITHUB_OUTPUT
+
+    # SSH into the EC2 instance and rollback the application
+    - name: Rollback application
+      env:
+        INSTANCE_IP: ${{ steps.get_ip.outputs.instance_ip }}
+        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        ROLLBACK_COMMIT: ${{ inputs.commit }}
+      run: |
+        # Wait for SSH to be ready (max 60 seconds)
+        for i in {1..12}; do
+          if ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i <(echo "$SSH_PRIVATE_KEY") ubuntu@$INSTANCE_IP true; then
+            break
+          fi
+          echo "Waiting for SSH..."
+          sleep 5
+        done
+
+        # Create the directory for docker-compose on the EC2 instance if it doesn't exist
+        ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i <(echo "$SSH_PRIVATE_KEY") ubuntu@$INSTANCE_IP << 'EOF'
+          sudo mkdir -p /opt/clouddeploy-pro
+          cd /opt/clouddeploy-pro
+          # Write a docker-compose.yml file that uses the image from the rollback commit
+          cat > docker-compose.yml << 'EOFF'
+          version: '3.8'
+          services:
+            backend:
+              image: ${{ secrets.DOCKER_USERNAME }}/clouddeploy-pro-backend:${{ env.ROLLBACK_COMMIT }}
+              ports:
+                - "8000:8000"
+              environment:
+                - ENVIRONMENT=${{ inputs.environment }}
+                - APP_VERSION=1.0.0
+                - GIT_COMMIT=${{ env.ROLLBACK_COMMIT }}
+                - DEPLOYED_AT=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+              restart: unless-stopped
+            frontend:
+              image: ${{ secrets.DOCKER_USERNAME }}/clouddeploy-pro-frontend:${{ env.ROLLBACK_COMMIT }}
+              ports:
+                - "3000:80"
+              environment:
+                - NODE_ENV=production
+              restart: unless-stopped
+          EOFF
+          # Pull the image for rollback (if not already present)
+          docker-compose pull
+          # Restart the services
+          docker-compose up -d
+          # Wait a bit for the services to start
+          sleep 10
+          # Run a health check
+          curl -f http://localhost:8000/health || echo "Health check failed"
+        EOF

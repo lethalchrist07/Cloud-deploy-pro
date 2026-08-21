@@ -1,0 +1,30 @@
+graph TD
+    A[GitHub Repository] -->|Push| B(GitHub Actions CI/CD)
+    B -->|Build & Test| C[Docker Images]
+    C -->|Push| D[Docker Hub/ECR]
+    B -->|Terraform| E[AWS Infrastructure]
+    E -->|Provision| F[VPC]
+    E -->|Provision| G[EC2 Instance]
+    E -->|Provision| H[S3 Bucket]
+    E -->|Provision| I[CloudWatch Logs]
+    F -->|Route Traffic| J[Internet Gateway]
+    G -->|Run| K[Docker Containers]
+    K -->|Backend| L[FastAPI API]
+    K -->|Frontend| M[React Dashboard]
+    L -->|Logs & Metrics| I
+    M -->|User Requests| L
+    L -->|Health Checks| N[CloudWatch Alarms]
+    style A fill:#f9f,stroke:#333
+    style B fill:#bfb,stroke:#333
+    style C fill:#bbf,stroke:#333
+    style D fill:#bfb,stroke:#333
+    style E fill:#fbb,stroke:#333
+    style F fill:#ff9,stroke:#333
+    style G fill:#9f9,stroke:#333
+    style H fill:#99f,stroke:#333
+    style I fill:#f99,stroke:#333
+    style J fill:#9ff,stroke:#333
+    style K fill:#ff9,stroke:#333
+    style L fill:#9f9,stroke:#333
+    style M fill:#99f,stroke:#333
+    style N fill:#f99,stroke:#333

@@ -1,0 +1,37 @@
+{
+    "widgets": [
+        {
+            "type": "metric",
+            "x": 0,
+            "y": 0,
+            "width": 12,
+            "height": 6,
+            "properties": {
+                "view": "timeSeries",
+                "stacked": false,
+                "metrics": [
+                    [ "CloudDeployPro", "RequestCount", { "stat": "Sum", "label": "Requests per Minute" } ],
+                    [ "CloudDeployPro", "RequestLatency", { "stat": "Average", "label": "Average Latency (ms)" } ],
+                    [ "CloudDeployPro", "ErrorRate", { "stat": "Average", "label": "Error Rate (%)" } ]
+                ],
+                "region": "us-east-1",
+                "title": "Application Metrics",
+                "period": 60
+            }
+        },
+        {
+            "type": "log",
+            "x": 0,
+            "y": 6,
+            "width": 12,
+            "height": 6,
+            "properties": {
+                "query": "FIELD @timestamp | SORT @timestamp DESC | LIMIT 20",
+                "region": "us-east-1",
+                "title": "Recent Application Logs",
+                "view": "table",
+                "logGroupNames": [ "/ecs/clouddeploy-pro-${environment}" ]
+            }
+        }
+    ]
+}

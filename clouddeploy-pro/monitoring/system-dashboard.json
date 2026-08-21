@@ -1,0 +1,23 @@
+{
+    "widgets": [
+        {
+            "type": "metric",
+            "x": 0,
+            "y": 0,
+            "width": 12,
+            "height": 6,
+            "properties": {
+                "view": "timeSeries",
+                "stacked": false,
+                "metrics": [
+                    [ "AWS/EC2", "CPUUtilization", "InstanceId", "${instance_id}", { "stat": "Average", "label": "CPU Utilization" } ],
+                    [ ".", "MemoryUtilization", { "stat": "Average", "label": "Memory Utilization" } ],
+                    [ ".", "DiskUtilization", { "stat": "Average", "label": "Disk Utilization" } ]
+                ],
+                "region": "us-east-1",
+                "title": "System Utilization",
+                "period": 300
+            }
+        }
+    ]
+}
