@@ -23,8 +23,8 @@ services:
     plan: free
     routes:
       - type: rewrite
-        source: /api/*
-        destination: https://clouddeploy-pro-backend.onrender.com/*
-      - type: rewrite
         source: /*
         destination: /index.html
+    envVars:
+      - key: VITE_API_BASE
+        value: https://clouddeploy-pro-backend.onrender.com

@@ -34,7 +34,7 @@ logger.info(f"GITHUB_TOKEN is configured: {bool(os.environ.get('GITHUB_TOKEN'))}
 
 import docker
 import uvicorn
-from fastapi import BackgroundTasks, FastAPI, HTTPException, Query
+from fastapi import BackgroundTasks, FastAPI, HTTPException, Query, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, validator
@@ -65,6 +65,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Middleware to transparently support both /api/... and /... routes
+@app.middleware("http")
+async def handle_api_prefix(request: Request, call_next):
+    if request.url.path.startswith("/api/"):
+        request.scope["path"] = request.url.path[4:]
+    elif request.url.path == "/api":
+        request.scope["path"] = "/"
+    return await call_next(request)
 
 # Pydantic models
 class SystemInfo(BaseModel):

@@ -25,70 +25,62 @@ import {
 import { MetricCard } from '../components/MetricCard';
 import './Analytics.css';
 
-interface SystemData {
-  cpu_usage: number;
-  memory_usage: number;
-  disk_usage: number;
-  boot_time: string;
-  platform: string;
-  hostname: string;
-  processor?: string;
-  memory_total_gb?: number;
-  memory_used_gb?: number;
-  memory_free_gb?: number;
-  disk_total_gb?: number;
-  disk_used_gb?: number;
-  disk_free_gb?: number;
-  cpu_cores_logical?: number;
-  cpu_cores_physical?: number;
-  cpu_freq_mhz?: number;
-  process_count?: number;
-  uptime_seconds?: number;
-  uptime_formatted?: string;
-  network_bytes_sent_mb?: number;
-  network_bytes_recv_mb?: number;
-  python_version?: string;
-}
-
-interface DeploymentData {
-  version: string;
-  git_commit: string;
-  deployed_at: string;
-  environment: string;
-  docker_status: string;
-  application?: string | null;
-  health_status?: string | null;
-  deployment_id?: string | null;
-  image?: string | null;
-  container_id?: string | null;
-  container_name?: string | null;
-}
-
-interface HealthData {
-  status: string;
-  environment: string;
-}
-
-interface LogEntry {
-  timestamp: string;
-  deployment_id: string;
-  application: string;
-  stage: string;
-  level: string;
-  message: string;
-}
-
 export const Analytics = () => {
   const [data, setData] = useState<{
-    system: SystemData | null;
-    deployment: DeploymentData | null;
-    health: HealthData | null;
+    system: {
+      cpu_usage: number;
+      memory_usage: number;
+      disk_usage: number;
+      boot_time: string;
+      platform: string;
+      hostname: string;
+      processor?: string;
+      memory_total_gb?: number;
+      memory_used_gb?: number;
+      memory_free_gb?: number;
+      disk_total_gb?: number;
+      disk_used_gb?: number;
+      disk_free_gb?: number;
+      cpu_cores_logical?: number;
+      cpu_cores_physical?: number;
+      cpu_freq_mhz?: number;
+      process_count?: number;
+      uptime_seconds?: number;
+      uptime_formatted?: string;
+      network_bytes_sent_mb?: number;
+      network_bytes_recv_mb?: number;
+      python_version?: string;
+    } | null;
+    deployment: {
+      version: string;
+      git_commit: string;
+      deployed_at: string;
+      environment: string;
+      docker_status: string;
+      application?: string | null;
+      health_status?: string | null;
+      deployment_id?: string | null;
+      image?: string | null;
+      container_id?: string | null;
+      container_name?: string | null;
+    } | null;
+    health: {
+      status: string;
+      environment: string;
+    } | null;
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [logs, setLogs] = useState<Array<{
+    timestamp: string;
+    deployment_id: string;
+    application: string;
+    stage: string;
+    level: string;
+    message: string;
+  }>>([]);
 
-  // Calculated metrics
+  // State for calculated metrics
   const [successRate, setSuccessRate] = useState<string>('0.0');
   const [errorLogsCount, setErrorLogsCount] = useState<number>(0);
   const [buildEventsCount, setBuildEventsCount] = useState<number>(0);
@@ -113,42 +105,49 @@ export const Analytics = () => {
         throw new Error(`Logs request failed (${logsRes.status})`);
       }
 
-      const metricsData: {
-        system: SystemData;
-        deployment: DeploymentData;
-        health: HealthData;
-      } = await metricsRes.json();
-      const logsData: { logs: LogEntry[] } = await logsRes.json();
+      const metricsData = await metricsRes.json();
+      const logsData = await logsRes.json();
 
       setData(metricsData);
       setLogs(logsData.logs || []);
 
-      // Calculate derived metrics
-      const appCount = [...new Set(logsData.logs?.map(log => log.application) || [])].length;
+      if (!logsData.logs || logsData.logs.length === 0) {
+        setSuccessRate('0.0');
+        setErrorLogsCount(0);
+        setBuildEventsCount(0);
+        setContainerEventsCount(0);
+        setHealthEventsCount(0);
+        return;
+      }
+
+      // Calculate derived metrics - count unique applications
+      const appArray = logsData.logs.map(log => log.application);
+      const uniqueApps = appArray.filter((app, index) => appArray.indexOf(app) === index);
+      const appCount = uniqueApps.length;
 
       // Deployment success rate calculation
-      const totalDeployments = logsData.logs?.filter(log =>
+      const totalDeployments = logsData.logs.filter(log =>
         log.stage.toLowerCase().includes('deployment') &&
         (log.level === 'INFO' || log.level === 'ERROR')
-      ).length || 0;
+      ).length;
 
-      const successfulDeployments = logsData.logs?.filter(log =>
+      const successfulDeploymentsCount = logsData.logs.filter(log =>
         log.stage.toLowerCase().includes('deployment') &&
         log.level === 'INFO' &&
         log.message.toLowerCase().includes('success')
-      ).length || 0;
+      ).length;
 
       const deploymentSuccessRate = totalDeployments > 0
-        ? ((successfulDeployments / totalDeployments) * 100).toFixed(1)
+        ? ((successfulDeploymentsCount / totalDeployments) * 100).toFixed(1)
         : '0.0';
 
       // Average deployment time (simplified)
       const deploymentTimes = logsData.logs
-        ?.filter(log => log.stage.toLowerCase().includes('deployment completed'))
+        .filter(log => log.stage.toLowerCase().includes('deployment completed'))
         .map(log => {
           // In a real app, we'd calculate actual duration from timestamps
           return Math.floor(Math.random() * 300) + 60; // 1-5 minutes simulated
-        }) || [];
+        });
 
       const avgDeploymentTime = deploymentTimes.length > 0
         ? (deploymentTimes.reduce((a, b) => a + b, 0) / deploymentTimes.length).toFixed(0)
@@ -157,27 +156,27 @@ export const Analytics = () => {
       setSuccessRate(deploymentSuccessRate);
 
       // Count error logs
-      const errorCount = logsData.logs?.filter(l => l.level === 'ERROR').length || 0;
+      const errorCount = logsData.logs.filter(l => l.level === 'ERROR').length;
       setErrorLogsCount(errorCount);
 
       // Count build events
-      const buildCount = logsData.logs?.filter(log =>
+      const buildCount = logsData.logs.filter(log =>
         log.stage.toLowerCase().includes('docker build') ||
         log.stage.toLowerCase().includes('build')
-      ).length || 0;
+      ).length;
       setBuildEventsCount(buildCount);
 
       // Count container events
-      const containerCount = logsData.logs?.filter(log =>
+      const containerCount = logsData.logs.filter(log =>
         log.stage.toLowerCase().includes('container start') ||
         log.stage.toLowerCase().includes('container')
-      ).length || 0;
+      ).length;
       setContainerEventsCount(containerCount);
 
       // Count health events
-      const healthCount = logsData.logs?.filter(log =>
+      const healthCount = logsData.logs.filter(log =>
         log.stage.toLowerCase().includes('health check')
-      ).length || 0;
+      ).length;
       setHealthEventsCount(healthCount);
 
     } catch (err) {
@@ -199,7 +198,7 @@ export const Analytics = () => {
     return () => clearInterval(interval);
   }, [fetchMetrics]);
 
-  // Format timestamp for display
+  // Helper functions
   const formatTime = (timestamp: string) => {
     if (!timestamp) return 'Recent';
     try {
@@ -209,7 +208,6 @@ export const Analytics = () => {
     }
   };
 
-  // Get activity icon based on stage
   const getActivityIcon = (stage: string) => {
     switch (stage) {
       case 'Docker Build': return <Activity size={16} />;
@@ -221,7 +219,6 @@ export const Analytics = () => {
     }
   };
 
-  // Determine status classes
   const getDockerStatusClass = () => {
     if (!data?.deployment) return 'status-unknown';
     const status = data.deployment.docker_status?.toLowerCase() ?? '';
@@ -438,7 +435,17 @@ export const Analytics = () => {
             </div>
             <div className="deployment-analytics-grid">
               <div className="analytics-metric">
-                <div className="analytics-metric-value">{[...new Set(logs.map(log => log.application))].length}</div>
+                <div className="analytics-metric-value">
+                  {logs.length > 0 ? (
+                    <>
+                      {(() => {
+                        const appArray = logs.map(log => log.application);
+                        const uniqueApps = appArray.filter((app, index) => appArray.indexOf(app) === index);
+                        return uniqueApps.length;
+                      })()}
+                    </>
+                  ) : 0}
+                </div>
                 <div className="analytics-metric-label">Applications Tracked</div>
               </div>
               <div className="analytics-metric">
@@ -594,7 +601,7 @@ export const Analytics = () => {
                       <div className="trend-content">
                         <h3>High CPU Utilization</h3>
                         <p>
-                          CPU usage is currently at {data.system.cpu_usage.toFixed(1)}%,
+                          CPU usage is currently at {data?.system.cpu_usage.toFixed(1)}%,
                           which may impact application performance.
                         </p>
                       </div>
@@ -608,7 +615,7 @@ export const Analytics = () => {
                       <div className="trend-content">
                         <h3>Healthy Deployment Activity</h3>
                         <p>
-                          {successfulDeployments} successful deployments in the last 24h.
+                          {successfulDeploymentsCount} successful deployments in the last 24h.
                           System stability appears good.
                         </p>
                       </div>
