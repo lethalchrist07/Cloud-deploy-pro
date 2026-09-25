@@ -1,24 +1,29 @@
-import '../styles/design-system.css'
+interface DeploymentLog {
+  timestamp: string
+  deployment_id: string
+  application: string
+  stage: string
+  level: 'INFO' | 'WARNING' | 'ERROR' | string
+  message: string
+}
 
-export const DeploymentLogs = () => {
-  // Simulated logs
-  const logs = [
-    { timestamp: new Date().toISOString(), level: 'INFO', message: 'Deployment started' },
-    { timestamp: new Date(Date.now() - 10000).toISOString(), level: 'INFO', message: 'Building Docker image' },
-    { timestamp: new Date(Date.now() - 20000).toISOString(), level: 'INFO', message: 'Running tests' },
-    { timestamp: new Date(Date.now() - 30000).toISOString(), level: 'WARN', message: 'Minor vulnerability found' },
-    { timestamp: new Date(Date.now() - 40000).toISOString(), level: 'INFO', message: 'Pushing image to registry' },
-    { timestamp: new Date(Date.now() - 50000).toISOString(), level: 'INFO', message: 'Deploying to EC2' },
-    { timestamp: new Date(Date.now() - 60000).toISOString(), level: 'INFO', message: 'Deployment successful' },
-  ];
+interface DeploymentLogsProps {
+  logs: DeploymentLog[]
+}
+
+export const DeploymentLogs = ({ logs }: DeploymentLogsProps) => {
+  if (logs.length === 0) {
+    return <p className="deployment-log-empty">Docker output will appear here when the deployment starts.</p>
+  }
 
   return (
-    <div className="logs-viewer">
-      {logs.map((log, index) => (
-        <div key={index} className={`log-entry log-${log.level.toLowerCase()}`}>
-          <div className="log-timestamp">{new Date(log.timestamp).toLocaleTimeString()}</div>
-          <div className="log-level">{log.level}</div>
-          <div className="log-message">{log.message}</div>
+    <div className="deployment-log-list" aria-live="polite">
+      {logs.map((entry, index) => (
+        <div className="deployment-log-entry" key={`${entry.timestamp}-${index}`}>
+          <time dateTime={entry.timestamp}>{new Date(entry.timestamp).toLocaleTimeString()}</time>
+          <span className={`deployment-log-level ${entry.level.toLowerCase()}`}>{entry.level}</span>
+          <span className="deployment-log-stage">{entry.stage}</span>
+          <span className="deployment-log-message">{entry.message}</span>
         </div>
       ))}
     </div>

@@ -1,0 +1,68 @@
+services:
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: clouddeploy-pro-backend-dev
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    environment:
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - APP_VERSION=${APP_VERSION:-1.0.0}
+      - DEBUG=${DEBUG:-true}
+    restart: unless-stopped
+    volumes:
+      # Hot-reload: mount app source code
+      - ../backend/app:/app/app
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    container_name: clouddeploy-pro-frontend-dev
+    ports:
+      - "${FRONTEND_PORT:-3000}:80"
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
+    restart: unless-stopped
+    volumes:
+      # Hot-reload: mount source and vite config
+      - ../frontend/src:/app/src
+      - ../frontend/public:/app/public
+      - ../frontend/vite.config.ts:/app/vite.config.ts
+    depends_on:
+      backend:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O-", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+networks:
+  default:
+    name: clouddeploy-pro-network-dev
+    driver: bridge

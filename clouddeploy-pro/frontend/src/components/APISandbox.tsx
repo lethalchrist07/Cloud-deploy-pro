@@ -7,17 +7,23 @@ export const APISandbox = () => {
   const [error, setError] = useState<string | null>(null);
 
   const endpoints = [
-    { label: 'Health Check', value: '/health' },
-    { label: 'System Metrics', value: '/system' },
-    { label: 'Deployment Info', value: '/deployment' },
-    { label: 'Full Metrics', value: '/metrics' },
+    { label: 'Health Probe (/health)', value: '/health' },
+    { label: 'System Hardware Metrics (/system)', value: '/system' },
+    { label: 'Deployment State (/deployment)', value: '/deployment' },
+    { label: 'Pipeline Stages (/pipeline)', value: '/pipeline' },
+    { label: 'Applications List (/applications)', value: '/applications' },
+    { label: 'Infrastructure Inventory (/infrastructure/inventory)', value: '/infrastructure/inventory' },
+    { label: 'Architectural Drawbacks (/drawbacks)', value: '/drawbacks' },
+    { label: 'Environment Config (/environment)', value: '/environment' },
+    { label: 'Recent Logs (/logs?lines=10)', value: '/logs?lines=10' },
+    { label: 'Full Metrics Aggregation (/metrics)', value: '/metrics' },
   ];
 
   const callAPI = async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`http://localhost:8000${endpoint}`);
+      const res = await fetch(`/api${endpoint}`);
       if (!res.ok) {
         throw new Error(`HTTP ${res.status}`);
       }

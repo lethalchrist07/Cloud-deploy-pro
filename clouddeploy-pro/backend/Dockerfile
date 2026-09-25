@@ -1,38 +1,49 @@
-# Backend Dockerfile - Multi-stage build
+# Backend Dockerfile - Multi-stage build with optimized layer caching
 
-# Stage 1: Build
+# Stage 1: Builder - Install dependencies
 FROM python:3.11-slim AS builder
 
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
+# Install build dependencies only (will be removed in final image)
+RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements and install Python dependencies
+# Copy only requirements first (leverage Docker layer caching)
+# If requirements don't change, this layer is cached
 COPY requirements.txt .
+
+# Install Python dependencies to user directory
 RUN pip install --user --no-cache-dir -r requirements.txt
 
-# Stage 2: Runtime
+# Stage 2: Runtime - Final image
 FROM python:3.11-slim
+
+# Install only runtime dependencies (curl for healthcheck)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
 WORKDIR /app
 
-# Copy installed dependencies from builder
-COPY --from=builder /root/.local /root/.local
+# Create non-root user before copying files for proper ownership
+RUN useradd --create-home --shell /bin/bash appuser
 
-# Copy application code
-COPY app/ ./app/
+# Copy installed dependencies from builder with correct ownership
+COPY --from=builder --chown=appuser:appuser /root/.local /home/appuser/.local
 
-# Create non-root user
-RUN useradd --create-home --shell /bin/bash app
-USER app
+# Copy application code with correct ownership
+# This layer changes frequently, so it's placed after stable layers
+COPY --chown=appuser:appuser app/ ./app/
 
 # Set PATH to include user's pip packages
-ENV PATH=/root/.local/bin:$PATH
+ENV PATH=/home/appuser/.local/bin:$PATH
+
+# Switch to non-root user
+USER appuser
 
 # Expose port
 EXPOSE 8000

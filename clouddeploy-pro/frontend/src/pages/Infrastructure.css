@@ -22,7 +22,8 @@
   font-size: 1.25rem;
   font-weight: 800;
   font-family: var(--font-display);
-  background: linear-gradient(135deg, var(--accent-purple-light) 0%, var(--accent-cyan) 60%, var(--accent-rose) 100%);
+  color: var(--text-primary);
+  background: linear-gradient(135deg, #FFFFFF 0%, #E2E8F0 60%, #34D399 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -56,7 +57,7 @@
 }
 
 .overview-card:hover {
-  border-color: rgba(56, 189, 248, 0.3);
+  border-color: rgba(16, 185, 129, 0.4);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
@@ -73,7 +74,8 @@
   font-size: 0.9rem;
   font-weight: 700;
   margin-bottom: 0.15rem;
-  color: var(--accent-cyan);
+  color: var(--accent-mint);
+  font-family: var(--font-mono);
 }
 
 .overview-details {
@@ -124,6 +126,92 @@
 @media (max-width: 1024px) {
   .terraform-overview .overview-grid,
   .monitoring-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.drawbacks-unavailable {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: var(--border);
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+.drawbacks-unavailable svg { flex: 0 0 auto; margin-top: 2px; }
+
+.header-with-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.container-state-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+
+.container-meta-card {
+  background: var(--bg-secondary);
+  border: var(--border);
+  border-radius: var(--border-radius);
+  padding: 0.9rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  transition: all var(--transition-fast);
+}
+
+.container-meta-card:hover {
+  border-color: #2d3748;
+  background: var(--bg-hover);
+}
+
+.card-kicker {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+.container-val {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.container-health-val {
+  font-size: 0.95rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: var(--accent-mint);
+}
+
+.container-health-val.failed,
+.container-health-val.unhealthy {
+  color: #ef4444;
+}
+
+.card-sub {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+@media (max-width: 900px) {
+  .container-state-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 550px) {
+  .container-state-grid {
     grid-template-columns: 1fr;
   }
 }

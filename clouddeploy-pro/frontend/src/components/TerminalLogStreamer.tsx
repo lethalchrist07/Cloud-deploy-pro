@@ -1,101 +1,101 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react'
+import { AlertCircle, Terminal } from 'lucide-react'
+import './TerminalLogStreamer.css'
+
+interface RuntimeLog {
+  timestamp: string
+  deployment_id: string
+  application: string
+  stage: string
+  level: string
+  message: string
+}
 
 export const TerminalLogStreamer = () => {
-  const [logs, setLogs] = useState<Array<{
-    id: number;
-    timestamp: string;
-    level: 'info' | 'warn' | 'error';
-    message: string;
-  }>>([]);
-  const [autoScroll, setAutoScroll] = useState(true);
+  const [logs, setLogs] = useState<RuntimeLog[]>([])
+  const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    // Simulate log streaming
-    const logLevels: ('info' | 'warn' | 'error')[] = ['info', 'info', 'warn', 'info', 'error'];
-    let idCounter = logs.length > 0 ? Math.max(...logs.map(l => l.id)) + 1 : 1;
-
-    const interval = setInterval(() => {
-      const level = logLevels[Math.floor(Math.random() * logLevels.length)];
-      const messages = {
-        info: [
-          'Application started successfully',
-          'Health check passed',
-          'Metrics collected',
-          'Deployment initiated',
-          'Pipeline step completed'
-        ],
-        warn: [
-          'High memory usage detected',
-          'Deployment taking longer than expected',
-          'Network latency increased'
-        ],
-        error: [
-          'Failed to connect to database',
-          'Deployment failed: Health check unsuccessful',
-          'Terraform apply error: Resource already exists'
-        ]
-      };
-
-      const message =
-        messages[level][Math.floor(Math.random() * messages[level].length)];
-
-      setLogs(prev => [
-        ...prev,
-        {
-          id: idCounter++,
-          timestamp: new Date().toISOString(),
-          level,
-          message,
-        },
-      ]);
-
-      // Keep only last 100 logs
-      if (logs.length > 100) {
-        setLogs(logs.slice(logs.length - 100));
-      }
-    }, 2000);
-
-    return () => clearInterval(interval);
-  }, [logs]);
-
-  // Scroll to bottom when autoScroll is enabled and logs change
-  useEffect(() => {
-    if (autoScroll) {
-      const logContainer = document.querySelector('.logs-stream');
-      if (logContainer) {
-        logContainer.scrollTop = logContainer.scrollHeight;
-      }
+  const refresh = useCallback(async (signal?: AbortSignal) => {
+    try {
+      const response = await fetch('/api/logs?lines=10', { signal })
+      if (!response.ok) throw new Error(`Log service returned HTTP ${response.status}.`)
+      const result = await response.json()
+      setLogs(result.logs || [])
+      setError(null)
+    } catch (requestError) {
+      if (requestError instanceof DOMException && requestError.name === 'AbortError') return
+      setError(requestError instanceof Error ? requestError.message : 'Deployment logs are unavailable.')
     }
-  }, [logs, autoScroll]);
+  }, [])
+
+  useEffect(() => {
+    const controller = new AbortController()
+    void refresh(controller.signal)
+    const interval = window.setInterval(() => void refresh(controller.signal), 3000)
+    return () => {
+      controller.abort()
+      window.clearInterval(interval)
+    }
+  }, [refresh])
 
   return (
-    <div className="card">
-      <div className="card-header">
-        <h3 className="card-title">Live Deployment Logs</h3>
-        <div className="log-controls">
-          <label>
-            <input
-              type="checkbox"
-              checked={autoScroll}
-              onChange={(e) => setAutoScroll(e.target.checked)}
-            />
-            Auto-scroll
-          </label>
+    <div className="terminal-log-streamer">
+      <div className="terminal-streamer-header">
+        <div className="terminal-header-left">
+          <div className="terminal-dots">
+            <span className="terminal-dot red" />
+            <span className="terminal-dot yellow" />
+            <span className="terminal-dot green" />
+          </div>
+          <span className="terminal-title">
+            <Terminal size={13} />
+            clouddeploy-daemon :: docker-events.log
+          </span>
+        </div>
+        <div className="terminal-header-right">
+          <span className="terminal-live-pill">
+            <span className="terminal-live-dot" />
+            Live Stream
+          </span>
         </div>
       </div>
-      <div className="card-content">
-        <div className="logs-stream">
-          {logs.map(log => (
-            <div key={log.id} className={`log-entry log-${log.level}`}>
-              <div className="log-timestamp">
-                {new Date(log.timestamp).toLocaleTimeString()}
-              </div>
-              <div className="log-level">{log.level.toUpperCase()}</div>
-              <div className="log-message">{log.message}</div>
+
+      <div className="terminal-body" aria-live="polite">
+        {error ? (
+          <div className="terminal-empty" style={{ color: '#f87171' }}>
+            <AlertCircle size={16} />
+            <span>{error}</span>
+          </div>
+        ) : logs.length === 0 ? (
+          <div className="terminal-empty">
+            <Terminal size={16} />
+            <span>
+              <span className="terminal-prompt-prefix">$</span>
+              Listening on daemon stream. No Docker events recorded yet.
+            </span>
+          </div>
+        ) : (
+          logs.slice().reverse().map((entry, index) => (
+            <div className="terminal-log-row" key={`${entry.timestamp}-${index}`}>
+              <span className="terminal-timestamp">
+                {entry.timestamp ? new Date(entry.timestamp).toLocaleTimeString() : '--:--:--'}
+              </span>
+              <span className={`terminal-level ${(entry.level || 'info').toLowerCase()}`}>
+                {entry.level || 'INFO'}
+              </span>
+              <span
+                className="terminal-context"
+                title={`${entry.application || 'CloudDeploy'} / ${entry.stage || 'System'}`}
+              >
+                [{entry.application || 'CloudDeploy'}:{entry.stage || 'core'}]
+              </span>
+              <span className="terminal-message">
+                {entry.message || ''}
+              </span>
             </div>
-          ))}
-        </div>
+          ))
+        )}
       </div>
     </div>
-  );
-};
+  )
+}

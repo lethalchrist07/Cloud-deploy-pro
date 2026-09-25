@@ -1,10 +1,11 @@
 interface RefreshButtonProps {
   onClick: () => void
+  disabled?: boolean
 }
 
-export const RefreshButton = ({ onClick }: RefreshButtonProps) => {
+export const RefreshButton = ({ onClick, disabled = false }: RefreshButtonProps) => {
   return (
-    <button onClick={onClick} className="refresh-button">
+    <button onClick={onClick} className="btn btn-primary" disabled={disabled}>
       Refresh
     </button>
   )

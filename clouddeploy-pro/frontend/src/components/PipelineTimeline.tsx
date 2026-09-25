@@ -1,77 +1,101 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react'
+import { AlertCircle, CheckCircle2, Circle, Loader2 } from 'lucide-react'
+import './PipelineTimeline.css'
+
+interface PipelineStage {
+  id: number
+  name: string
+  status: string
+  details?: string
+}
+
+interface PipelineData {
+  pipeline_id?: string | null
+  deployment_id?: string | null
+  application?: string
+  status: string
+  branch?: string
+  commit?: string | null
+  version?: string | null
+  total_duration?: string | null
+  last_run?: string
+  error?: string | null
+  message?: string
+  stages: PipelineStage[]
+}
+
+const statusIcon = (status: string) => {
+  const normalized = status.toLowerCase()
+  if (['success', 'healthy'].includes(normalized)) return <CheckCircle2 size={17} className="stage-status-icon passed" />
+  if (normalized === 'failed' || normalized === 'unhealthy') return <AlertCircle size={17} className="stage-status-icon failed" />
+  if (['building', 'starting', 'health_check'].includes(normalized)) return <Loader2 size={17} className="stage-status-icon loading spin" />
+  return <Circle size={17} className="stage-status-icon pending" />
+}
 
 export const PipelineTimeline = () => {
-  const [steps] = useState([
-    { id: 1, label: 'Lint & Test', duration: '37s', status: 'RUNNING', color: '#00F2FE' },
-    { id: 2, label: 'Build Docker Image', duration: '45s', status: 'SUCCESS', color: '#10B981' },
-    { id: 3, label: 'Terraform Plan', duration: '8s', status: 'SUCCESS', color: '#10B981' },
-    { id: 4, label: 'Deploy EC2', duration: '0s', status: 'RUNNING', color: '#00F2FE' },
-    { id: 5, label: 'Post-deployment Checks', duration: '0s', status: 'PENDING', color: '#94A3B8' },
-  ]);
+  const [pipeline, setPipeline] = useState<PipelineData | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  const refresh = useCallback(async (signal?: AbortSignal) => {
+    try {
+      const response = await fetch('/api/pipeline', { signal })
+      if (!response.ok) throw new Error(`Pipeline status returned HTTP ${response.status}.`)
+      setPipeline(await response.json())
+      setError(null)
+    } catch (requestError) {
+      if (requestError instanceof DOMException && requestError.name === 'AbortError') return
+      setError(requestError instanceof Error ? requestError.message : 'Pipeline status is unavailable.')
+    }
+  }, [])
+
+  useEffect(() => {
+    const controller = new AbortController()
+    void refresh(controller.signal)
+    const interval = window.setInterval(() => void refresh(controller.signal), 3000)
+    return () => {
+      controller.abort()
+      window.clearInterval(interval)
+    }
+  }, [refresh])
+
+  const pipelineStatus = pipeline?.status?.toUpperCase() || 'PENDING'
+  const statusClass = pipelineStatus.toLowerCase().replace(/[^a-z0-9_-]/g, '-')
 
   return (
-    <div className="card">
-      <div className="card-header">
-        <h3 className="card-title">Pipeline Execution Timeline</h3>
+    <div className="control-panel pipeline-panel">
+      <div className="component-heading">
+        <div>
+          <p className="eyebrow">Local Docker Delivery</p>
+          <h2 className="topic-title">Deployment Pipeline</h2>
+          <p className="topic-description">Real repository build, container startup, and application health status.</p>
+        </div>
+        {pipeline?.deployment_id && <span className={`pipeline-status-pill ${statusClass}`}>{pipelineStatus.replace(/_/g, ' ')}</span>}
       </div>
-      <div className="card-content" style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
-        {steps.map((step) => {
-          const isRunning = step.status === 'RUNNING';
-          const isSuccess = step.status === 'SUCCESS';
-          const borderColor = isRunning ? 'rgba(0, 242, 254, 0.4)' : isSuccess ? 'rgba(16, 185, 129, 0.3)' : 'rgba(255, 255, 255, 0.08)';
 
-          return (
-            <div
-              key={step.id}
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                padding: '0.6rem 0.85rem',
-                backgroundColor: '#161430',
-                borderRadius: '0.5rem',
-                border: `1px solid ${borderColor}`,
-                boxShadow: isRunning ? '0 0 10px rgba(0, 242, 254, 0.15)' : 'none'
-              }}
-            >
-              <div>
-                <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#F8FAFC' }}>{step.label}</div>
-                <div style={{ fontSize: '0.72rem', color: '#94A3B8', marginTop: '2px', fontFamily: 'var(--font-mono)' }}>
-                  {step.duration}
-                </div>
-              </div>
-
-              {/* Status Badge */}
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '0.2rem 0.55rem',
-                  borderRadius: '0.375rem',
-                  fontSize: '0.7rem',
-                  fontWeight: 800,
-                  color: step.color,
-                  letterSpacing: '0.04em',
-                  border: `1px solid ${step.color}40`,
-                  backgroundColor: `${step.color}10`
-                }}
-              >
-                <span
-                  style={{
-                    width: '6px',
-                    height: '6px',
-                    borderRadius: '50%',
-                    backgroundColor: step.color,
-                    boxShadow: `0 0 6px ${step.color}`
-                  }}
-                />
-                {step.status}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      {error && <div className="pipeline-unavailable" role="alert"><AlertCircle size={18} /><p>{error}</p></div>}
+      {!error && pipeline && pipeline.stages.length === 0 && (
+        <div className="pipeline-unavailable" role="status"><Circle size={18} /><p>{pipeline.message || 'No Docker deployment has been started. Deploy a registered application to begin.'}</p></div>
+      )}
+      {pipeline && pipeline.stages.length > 0 && (
+        <>
+          <div className="pipeline-context-bar">
+            <div className="context-item"><span>Application</span><strong>{pipeline.application || 'Unavailable'}</strong></div>
+            <div className="context-item"><span>Branch</span><strong>{pipeline.branch || 'Unavailable'}</strong></div>
+            <div className="context-item"><span>Commit</span><code>{pipeline.commit || 'Pending'}</code></div>
+            {pipeline.total_duration && <div className="context-item"><span>Duration</span><strong>{pipeline.total_duration}</strong></div>}
+          </div>
+          {pipeline.error && <div className="pipeline-unavailable pipeline-error" role="alert"><AlertCircle size={18} /><p>{pipeline.error}</p></div>}
+          <div className="pipeline-flow-container">
+            {pipeline.stages.map(stage => (
+              <article className="pipeline-stage-card" key={stage.id}>
+                <div className="stage-card-header"><span className="stage-num">STAGE 0{stage.id}</span><span className={`stage-state ${stage.status.toLowerCase()}`}>{stage.status.replace(/_/g, ' ')}</span></div>
+                <div className="stage-name-row">{statusIcon(stage.status)}<strong className="stage-name">{stage.name}</strong></div>
+                <p className="stage-details">{stage.details || 'Waiting for this stage to run.'}</p>
+              </article>
+            ))}
+          </div>
+        </>
+      )}
     </div>
-  );
-};
+  )
+}

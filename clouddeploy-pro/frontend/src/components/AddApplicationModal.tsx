@@ -2,10 +2,45 @@ import { useState } from 'react';
 import { X, CheckCircle2, Loader2 } from 'lucide-react';
 
 interface InspectionResult {
+  success: boolean;
+  repository_name: string;
   repository_url: string;
   branch: string;
-  dockerfile_path?: string;
-  terraform_path?: string;
+  description: string;
+  default_branch: string;
+  languages: string[];
+  primary_language: string;
+  frameworks: string[];
+  project_type: string;
+  package_manager: string;
+  files: {
+    package_json: boolean;
+    requirements_txt: boolean;
+    pyproject_toml: boolean;
+    dockerfile: boolean;
+    docker_compose: boolean;
+    terraform: boolean;
+    makefile: boolean;
+    env_example: boolean;
+  };
+  docker_configuration: {
+    has_dockerfile: boolean;
+    has_docker_compose: boolean;
+    dockerfile_path?: string;
+    dockerfile_analysis: Record<string, unknown>;
+    docker_compose_analysis: Record<string, unknown>;
+  };
+  terraform_configuration: {
+    has_terraform: boolean;
+    terraform_path?: string;
+  };
+  ci_cd_configuration: Record<string, boolean>;
+  build_command?: string;
+  start_command?: string;
+  environment_variables: string[];
+  deployment_readiness: string;
+  warnings: string[];
+  detailed_analysis: Record<string, unknown>;
 }
 
 interface AddApplicationModalProps {
@@ -44,9 +79,8 @@ export const AddApplicationModal = ({
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-    // Clear error for this field when user types
     if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
+      setErrors(prev => ({ ...prev, [name]: '', general: '' }));
     }
   };
 
@@ -92,22 +126,18 @@ export const AddApplicationModal = ({
     }
 
     if (inspectionResults) {
-      // We have inspection results, so we create the application
       setLoading(true);
       setSuccessMessage(null);
 
       try {
         await onCreate({
           ...formData,
-          // Note: formData now contains the inspected values for repository_url, branch, etc.
-          // We are using the form data as is.
           repository_url: formData.repository_url,
           branch: formData.branch,
           dockerfile_path: formData.dockerfile_path,
           terraform_path: formData.terraform_path
         });
         setSuccessMessage("Application added successfully!");
-        // Reset form data to initial state
         setFormData({
           name: '',
           repository_url: '',
@@ -119,22 +149,20 @@ export const AddApplicationModal = ({
         setErrors({});
         setInspectionResults(null);
 
-        // Auto-close after success
         setTimeout(() => {
           onClose();
         }, 1500);
       } catch (err) {
-        setSuccessMessage("Failed to add application. Please try again.");
+        setErrors(prev => ({ ...prev, general: err instanceof Error ? err.message : 'Unable to add application.' }));
       } finally {
         setLoading(false);
       }
     } else {
-      // Otherwise, start inspection
       setInspectionLoading(true);
       setErrors(prev => ({ ...prev, repository_url: "" }));
 
       try {
-        const response = await fetch("http://localhost:8000/applications/inspect", {
+        const response = await fetch("/api/applications/inspect", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -145,25 +173,20 @@ export const AddApplicationModal = ({
           }),
         });
 
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-
         const result = await response.json();
+        if (!response.ok) {
+          throw new Error(result.detail || `Repository inspection failed (HTTP ${response.status}).`);
+        }
         setInspectionResults(result);
-        // Update form data with inspection results, preserving other fields
         setFormData(prev => ({
           ...prev,
           repository_url: result.repository_url,
           branch: result.branch,
-          // Only update dockerfile_path and terraform_path if they are present in the result
-          // Otherwise, keep the current form data (which might be user input or default)
           dockerfile_path: result.dockerfile_path ?? prev.dockerfile_path,
           terraform_path: result.terraform_path ?? prev.terraform_path
         }));
       } catch (err) {
-        console.error("Error inspecting repository:", err);
-        setErrors(prev => ({ ...prev, repository_url: "Failed to inspect repository. Please check the URL and try again." }));
+        setErrors(prev => ({ ...prev, repository_url: err instanceof Error ? err.message : 'Unable to inspect this repository.' }));
       } finally {
         setInspectionLoading(false);
       }
@@ -173,93 +196,212 @@ export const AddApplicationModal = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={onClose}>
-      <div className="relative w-full max-w-[650px] mx-auto overflow-y-auto max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
-        <div className="bg-secondary border border-active rounded-xl shadow-md glass flex flex-col h-full"
-             style={{
-               borderRadius: 'var(--border-radius-lg)',
-               padding: 'var(--space-5)',
-               gap: 'var(--space-4)'
-             }}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => { if (!loading && !inspectionLoading) onClose() }}>
+      <div className="relative w-full max-w-[650px] mx-auto overflow-y-auto max-h-[90vh]" role="dialog" aria-modal="true" aria-labelledby="add-application-title" onClick={(e) => e.stopPropagation()}>
+        <div className="bg-secondary border border-active rounded-xl shadow-md glass flex flex-col h-full" style={{ borderRadius: 'var(--border-radius-lg)', padding: 'var(--space-5)', gap: 'var(--space-4)' }}>
           <div className="flex flex-col space-y-2" style={{ gap: 'var(--space-3)' }}>
-            <h3 className="text-primary font-semibold text-lg">Add New Application</h3>
+            <h3 id="add-application-title" className="text-primary font-semibold text-lg">Add New Application</h3>
             <p className="text-muted text-sm">Connect a GitHub repository and configure its deployment settings.</p>
           </div>
-          <button className="btn-icon" onClick={onClose} aria-label="Close">
+          <button className="btn-icon" onClick={onClose} disabled={loading || inspectionLoading} aria-label="Close">
             <X size={18} />
           </button>
         </div>
 
         {successMessage && (
-          <div className="p-4" style={{
-            backgroundColor: 'var(--bg-success)/10',
-            border: '1px solid var(--border-success)/20',
-            borderRadius: 'var(--border-radius-lg)',
-            marginTop: 'calc(var(--space-5) * -1)',
-            marginInline: 'calc(var(--space-5) * -1)',
-            padding: 'var(--space-5)'
-          }}>
+          <div className="p-4" role="status" style={{ backgroundColor: 'var(--bg-success)/10', border: '1px solid var(--border-success)/20', borderRadius: 'var(--border-radius-lg)', marginTop: 'calc(var(--space-5) * -1)', marginInline: 'calc(var(--space-5) * -1)', padding: 'var(--space-5)' }}>
             <CheckCircle2 size={14} className="text-success mr-2" />
             <span>{successMessage}</span>
           </div>
         )}
+        {errors.general && <div className="error-alert" role="alert">{errors.general}</div>}
 
         {inspectionResults ? (
-          <div className="p-4 space-y-4" style={{
-            marginTop: 'calc(var(--space-5) * -1)',
-            marginInline: 'calc(var(--space-5) * -1)',
-            padding: 'var(--space-5)'
-          }}>
-            <div className="bg-tertiary border border-active rounded-xl shadow-md p-4"
-                 style={{
-                   borderRadius: 'var(--border-radius-lg)',
-                   padding: 'var(--space-5)'
-                 }}>
+          <div className="p-4 space-y-4" style={{ marginTop: 'calc(var(--space-5) * -1)', marginInline: 'calc(var(--space-5) * -1)', padding: 'var(--space-5)' }}>
+            <div className="bg-tertiary border border-active rounded-xl shadow-md p-4" style={{ borderRadius: 'var(--border-radius-lg)', padding: 'var(--space-5)' }}>
               <h3 className="font-semibold text-primary mb-2" style={{ marginBottom: 'var(--space-3)' }}>Inspection Results</h3>
-              <div className="space-y-2 text-sm" style={{ gap: 'var(--space-2)' }}>
-                <div className="flex">
-                  <span className="w-32 text-muted">Repository:</span>
-                  <span className="text-primary truncate max-w-[200px]">{inspectionResults.repository_url}</span>
-                </div>
-                <div className="flex">
-                  <span className="w-32 text-muted">Branch:</span>
-                  <span className="text-primary">{inspectionResults.branch}</span>
-                </div>
-                {inspectionResults.dockerfile_path && (
+
+              <div className="space-y-4">
+                <div className="space-y-2 text-sm">
                   <div className="flex">
-                    <span className="w-32 text-muted">Dockerfile:</span>
-                    <span className="text-primary">{inspectionResults.dockerfile_path}</span>
+                    <span className="w-32 text-muted">Repository:</span>
+                    <span className="text-primary truncate max-w-[200px]">{inspectionResults.repository_url}</span>
+                  </div>
+                  <div className="flex">
+                    <span className="w-32 text-muted">Branch:</span>
+                    <span className="text-primary">{inspectionResults.branch}</span>
+                  </div>
+                  {inspectionResults.description && (
+                    <div className="flex">
+                      <span className="w-32 text-muted">Description:</span>
+                      <span className="text-primary">{inspectionResults.description}</span>
+                    </div>
+                  )}
+                  <div className="flex">
+                    <span className="w-32 text-muted">Default Branch:</span>
+                    <span className="text-primary">{inspectionResults.default_branch}</span>
+                  </div>
+                </div>
+
+                <div className="border-t border-active pt-4">
+                  <h4 className="font-medium text-primary mb-2">Project Analysis</h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex">
+                      <span className="w-32 text-muted">Primary Language:</span>
+                      <span className="text-primary">{inspectionResults.primary_language}</span>
+                    </div>
+                    <div className="flex">
+                      <span className="w-32 text-muted">Project Type:</span>
+                      <span className="text-primary">{inspectionResults.project_type}</span>
+                    </div>
+                    <div className="flex">
+                      <span className="w-32 text-muted">Package Manager:</span>
+                      <span className="text-primary">{inspectionResults.package_manager}</span>
+                    </div>
+                    {inspectionResults.frameworks.length > 0 && (
+                      <div className="flex">
+                        <span className="w-32 text-muted">Frameworks:</span>
+                        <span className="text-primary">{inspectionResults.frameworks.join(', ')}</span>
+                      </div>
+                    )}
+                    {inspectionResults.languages.length > 0 && (
+                      <div className="flex">
+                        <span className="w-32 text-muted">Languages:</span>
+                        <span className="text-primary">{inspectionResults.languages.join(', ')}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="border-t border-active pt-4">
+                  <h4 className="font-medium text-primary mb-2">Detected Files</h4>
+                  <div className="space-y-1 text-sm">
+                    {Object.entries(inspectionResults.files).map(([key, value]) => (
+                      value && (
+                        <div className="flex" key={key}>
+                          <span className="w-32 text-muted">{key.replace('_', ' ').toUpperCase()}:</span>
+                          <span className="text-primary">Yes</span>
+                        </div>
+                      )
+                    ))}
+                  </div>
+                </div>
+
+                {(inspectionResults.build_command || inspectionResults.start_command) && (
+                  <div className="border-t border-active pt-4">
+                    <h4 className="font-medium text-primary mb-2">Commands</h4>
+                    <div className="space-y-2 text-sm">
+                      {inspectionResults.build_command && (
+                        <div className="flex">
+                          <span className="w-32 text-muted">Build Command:</span>
+                          <span className="text-primary">{inspectionResults.build_command}</span>
+                        </div>
+                      )}
+                      {inspectionResults.start_command && (
+                        <div className="flex">
+                          <span className="w-32 text-muted">Start Command:</span>
+                          <span className="text-primary">{inspectionResults.start_command}</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
-                {inspectionResults.terraform_path && (
-                  <div className="flex">
-                    <span className="w-32 text-muted">Terraform:</span>
-                    <span className="text-primary">{inspectionResults.terraform_path}</span>
+
+                {inspectionResults.environment_variables.length > 0 && (
+                  <div className="border-t border-active pt-4">
+                    <h4 className="font-medium text-primary mb-2">Environment Variables</h4>
+                    <div className="space-y-1 text-sm">
+                      {inspectionResults.environment_variables.map((env, index) => (
+                        <div className="flex" key={index}>
+                          <span className="w-32 text-muted">{env}:</span>
+                          <span className="text-primary">Detected</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="border-t border-active pt-4">
+                  <h4 className="font-medium text-primary mb-2">Deployment Readiness</h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex">
+                      <span className="w-32 text-muted">Status:</span>
+                      <span className={`text-${inspectionResults.deployment_readiness === 'ready' ? 'success' : 'warning'}`}>
+                        {inspectionResults.deployment_readiness}
+                      </span>
+                    </div>
+                    {inspectionResults.warnings.length > 0 && (
+                      <div className="mt-1">
+                        <span className="w-32 text-muted">Warnings:</span>
+                        <span className="text-warning text-xs">{inspectionResults.warnings.join(', ')}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {(inspectionResults.docker_configuration.has_dockerfile || inspectionResults.docker_configuration.has_docker_compose) && (
+                  <div className="border-t border-active pt-4">
+                    <h4 className="font-medium text-primary mb-2">Docker Configuration</h4>
+                    <div className="space-y-2 text-sm">
+                      {inspectionResults.docker_configuration.has_dockerfile && (
+                        <div className="flex">
+                          <span className="w-32 text-muted">Dockerfile:</span>
+                          <span className="text-primary">Yes</span>
+                        </div>
+                      )}
+                      {inspectionResults.docker_configuration.has_docker_compose && (
+                        <div className="flex">
+                          <span className="w-32 text-muted">Docker Compose:</span>
+                          <span className="text-primary">Yes</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {inspectionResults.terraform_configuration.has_terraform && (
+                  <div className="border-t border-active pt-4">
+                    <h4 className="font-medium text-primary mb-2">Terraform Configuration</h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex">
+                        <span className="w-32 text-muted">Terraform:</span>
+                        <span className="text-primary">Yes</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {Object.values(inspectionResults.ci_cd_configuration).some(value => value) && (
+                  <div className="border-t border-active pt-4">
+                    <h4 className="font-medium text-primary mb-2">CI/CD Configuration</h4>
+                    <div className="space-y-2 text-sm">
+                      {Object.entries(inspectionResults.ci_cd_configuration).map(([key, value]) => (
+                        value && (
+                          <div className="flex" key={key}>
+                            <span className="w-32 text-muted">{key.replace('_', ' ').toUpperCase()}:</span>
+                            <span className="text-primary">Configured</span>
+                          </div>
+                        )
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
+
               <button
                 type="button"
                 onClick={() => {
                   setInspectionResults(null);
-                  // Note: formData is already set to the inspection results, so we leave it as is for editing
                 }}
                 className="btn btn-secondary w-full"
-                style={{
-                  marginTop: 'var(--space-5)',
-                  padding: '0.4rem 0.8rem'
-                }}
+                style={{ marginTop: 'var(--space-5)', padding: '0.4rem 0.8rem' }}
               >
                 Back to Form
               </button>
             </div>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="p-4 space-y-4" style={{
-            marginTop: 'calc(var(--space-5) * -1)',
-            marginInline: 'calc(var(--space-5) * -1)',
-            padding: 'var(--space-5)'
-          }}>
+          <form onSubmit={handleSubmit} className="p-4 space-y-4" style={{ marginTop: 'calc(var(--space-5) * -1)', marginInline: 'calc(var(--space-5) * -1)', padding: 'var(--space-5)' }}>
             <div className="mb-4" style={{ marginBottom: 'var(--space-5)' }}>
               <label htmlFor="name" className="block text-sm font-medium text-muted mb-1">Application Name <span className="text-danger">*</span></label>
               <input
@@ -358,19 +500,13 @@ export const AddApplicationModal = ({
               )}
             </div>
 
-            <div className="modal-actions flex justify-between items-center space-x-3" style={{
-              marginTop: 'var(--space-5)',
-              gap: 'var(--space-3)'
-            }}>
+            <div className="modal-actions flex justify-between items-center space-x-3" style={{ marginTop: 'var(--space-5)', gap: 'var(--space-3)' }}>
               <button
                 type="button"
                 className="btn btn-secondary w-full md:w-1/2"
                 onClick={onClose}
                 disabled={loading || inspectionLoading}
-                style={{
-                  opacity: loading || inspectionLoading ? 0.5 : 1,
-                  padding: '0.4rem 0.8rem'
-                }}
+                style={{ opacity: loading || inspectionLoading ? 0.5 : 1, padding: '0.4rem 0.8rem' }}
               >
                 Cancel
               </button>
@@ -379,10 +515,7 @@ export const AddApplicationModal = ({
                 type="submit"
                 className="btn btn-primary w-full md:w-1/2"
                 disabled={loading || inspectionLoading}
-                style={{
-                  opacity: loading || inspectionLoading ? 0.5 : 1,
-                  padding: '0.4rem 0.8rem'
-                }}
+                style={{ opacity: loading || inspectionLoading ? 0.5 : 1, padding: '0.4rem 0.8rem' }}
               >
                 {loading ? (
                   <>

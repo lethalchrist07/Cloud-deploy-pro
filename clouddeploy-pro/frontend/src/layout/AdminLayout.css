@@ -1,183 +1,236 @@
-/* Admin Layout Styles - High-Availability Cyberpunk Top-Nav Theme */
 .admin-layout {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  width: 100vw;
-  overflow: hidden;
-  background-color: var(--bg-primary, #0D0E15);
-  color: var(--text-primary, #E2E8F0);
+  min-height: 100vh;
+  background: var(--bg-primary);
 }
 
-/* Top Header Bar */
-.top-header {
+.app-bar {
+  min-height: 60px;
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  padding: 0.35rem 1rem;
-  background-color: #0E0C22;
-  border-bottom: 1px solid rgba(139, 92, 246, 0.25);
-  height: 52px;
-  min-height: 52px;
-  box-sizing: border-box;
-  gap: 1rem;
+  align-items: center;
+  padding: 0 max(1.5rem, calc((100vw - 1320px) / 2));
+  border-bottom: 1px solid #1e2433;
+  background: rgba(9, 10, 15, 0.88);
+  backdrop-filter: blur(12px);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  flex-wrap: nowrap;
 }
 
-.brand-section {
+.app-bar-left {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  min-width: max-content;
+  gap: 1.25rem;
+  min-width: 0;
 }
 
-.app-title {
-  font-family: var(--font-display, 'Outfit', sans-serif);
-  font-size: 1.15rem;
-  font-weight: 800;
-  letter-spacing: -0.01em;
-  color: #00F2FE;
-  background: linear-gradient(135deg, #00F2FE 0%, #38BDF8 50%, #8B5CF6 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.backend-status {
+.product-mark {
   display: flex;
   align-items: center;
-  gap: 0.35rem;
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: var(--text-muted, #94A3B8);
-  margin-left: 0.25rem;
-}
-
-.status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-}
-
-.status-dot.connected {
-  background-color: #10B981;
-  box-shadow: 0 0 8px #10B981;
-}
-
-.status-dot.disconnected {
-  background-color: #F43F5E;
-  box-shadow: 0 0 8px #F43F5E;
-}
-
-/* Horizontal Top Navigation Tabs Menu */
-.top-nav-menu {
-  display: flex;
-  align-items: center;
-  gap: 0.2rem;
-  flex: 1;
-  justify-content: flex-start;
-  overflow-x: auto;
-}
-
-.top-nav-link {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.3rem 0.6rem;
-  color: #94A3B8;
+  gap: 0.65rem;
+  color: var(--text-primary);
   text-decoration: none;
-  border-radius: 0.375rem;
-  font-size: 0.78rem;
-  font-weight: 500;
-  white-space: nowrap;
-  transition: all 120ms ease;
-  border: 1px solid transparent;
+  letter-spacing: -0.02em;
+  flex-shrink: 0;
 }
 
-.top-nav-link:hover {
-  background-color: rgba(139, 92, 246, 0.15);
-  color: #F8FAFC;
-  border-color: rgba(139, 92, 246, 0.3);
+.product-mark span {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  background: var(--accent-emerald);
+  color: #041f14;
+  border-radius: 6px;
+  font: 800 0.75rem var(--font-mono);
+  letter-spacing: -0.04em;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.35);
 }
 
-.top-nav-link.active {
-  background: rgba(0, 242, 254, 0.08);
-  color: #00F2FE;
-  border: 1px solid #00F2FE;
-  box-shadow: 0 0 10px rgba(0, 242, 254, 0.25);
-  font-weight: 600;
-}
-
-/* Top Header Right Actions */
-.top-header-right {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  min-width: max-content;
-}
-
-.environment-selector select {
-  background-color: #161430;
-  border: 1px solid rgba(139, 92, 246, 0.3);
-  border-radius: 0.375rem;
-  color: #F8FAFC;
-  padding: 0.25rem 0.6rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.environment-selector select:focus {
-  outline: none;
-  border-color: #00F2FE;
-  box-shadow: 0 0 8px rgba(0, 242, 254, 0.3);
-}
-
-.header-color-pills {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-}
-
-.color-pill {
-  width: 16px;
-  height: 16px;
-  border-radius: 4px;
-  display: inline-block;
-}
-
-.pill-purple {
-  background-color: #8B5CF6;
-}
-
-.pill-pink {
-  background-color: #F43F5E;
-}
-
-.btn-refresh-all {
-  background-color: #8B5CF6;
-  color: #FFFFFF;
-  border: none;
-  border-radius: 0.5rem;
-  padding: 0.35rem 0.85rem;
-  font-size: 0.78rem;
+.product-mark strong {
+  font-size: 0.95rem;
   font-weight: 700;
+  color: #f8fafc;
+}
+
+.desktop-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.nav-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.6rem;
+  border-radius: 6px;
+  color: #94a3b8;
+  text-decoration: none;
+  font-size: 0.82rem;
+  font-weight: 500;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.nav-item:hover {
+  color: #f8fafc;
+  background: #151a24;
+}
+
+.nav-item.active {
+  color: #34d399;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  font-weight: 600;
+}
+
+.app-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+/* Elevated, Perfectly Placed Connection State Pill */
+.connection-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.32rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+  background: rgba(148, 163, 184, 0.08);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  color: #94a3b8;
+  letter-spacing: 0.015em;
+  transition: all 0.2s ease;
+}
+
+.connection-state.online {
+  background: rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.32);
+  color: #34d399;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.12);
+}
+
+.connection-state.offline {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.28);
+  color: #f87171;
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.12);
+}
+
+.connection-state i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ef4444;
+  box-shadow: 0 0 6px #ef4444;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.connection-state.online i {
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
+}
+
+.workspace-menu {
+  position: relative;
+  flex-shrink: 0;
+}
+
+/* Hide redundant workspace dropdown on desktop since all 8 links are directly visible in desktop-nav */
+@media (min-width: 1041px) {
+  .workspace-menu {
+    display: none;
+  }
+}
+
+.workspace-menu summary {
+  list-style: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border: 1px solid #1e2433;
+  border-radius: 6px;
+  padding: 0.35rem 0.75rem;
+  color: #cbd5e1;
   cursor: pointer;
-  box-shadow: 0 0 12px rgba(139, 92, 246, 0.4);
-  transition: all 150ms ease;
+  font-size: 0.82rem;
+  font-weight: 600;
+  background: #151a24;
+  transition: all 0.15s ease;
+  white-space: nowrap;
 }
 
-.btn-refresh-all:hover {
-  background-color: #7C3AED;
-  box-shadow: 0 0 16px rgba(139, 92, 246, 0.6);
-  transform: translateY(-1px);
+.workspace-menu summary:hover {
+  border-color: #2d3748;
+  color: #ffffff;
+  background: #1c2230;
 }
 
-/* Main Full Width Workspace */
+.workspace-menu summary::-webkit-details-marker {
+  display: none;
+}
+
+.workspace-menu nav {
+  position: absolute;
+  z-index: 50;
+  right: 0;
+  top: calc(100% + 8px);
+  width: 200px;
+  padding: 0.4rem;
+  border: 1px solid #1e2433;
+  border-radius: 8px;
+  background: #11141d;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6);
+}
+
+.workspace-menu nav a {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.5rem 0.75rem;
+  color: #cbd5e1;
+  text-decoration: none;
+  font-size: 0.82rem;
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.12s ease;
+}
+
+.workspace-menu nav a:hover,
+.workspace-menu nav a.active {
+  background: #1c2230;
+  color: #34d399;
+}
+
 .main-content-full {
-  flex: 1;
-  padding: 0.5rem 0.85rem;
-  overflow-y: auto;
-  background-color: var(--bg-primary, #0D0E15);
-  height: calc(100vh - 48px);
-  box-sizing: border-box;
+  padding: 2.2rem max(1.5rem, calc((100vw - 1320px) / 2));
+}
+
+@media (max-width: 1040px) {
+  .desktop-nav {
+    display: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .app-bar {
+    padding: 0 1rem;
+  }
+  .connection-state {
+    padding: 0.25rem 0.55rem;
+    font-size: 0.72rem;
+  }
+  .main-content-full {
+    padding: 1.5rem 1rem;
+  }
 }

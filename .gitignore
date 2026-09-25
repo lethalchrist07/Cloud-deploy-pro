@@ -1,3 +1,21 @@
 # Environment files
 .env
+*.env
 backend/.env
+clouddeploy-pro/backend/.env
+
+# AI & Assistant logs
+.claude/
+.devin/
+.gemini/
+memory/
+
+# Dependencies & Build
+node_modules/
+dist/
+venv/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.log

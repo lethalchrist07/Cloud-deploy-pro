@@ -25,12 +25,12 @@ export const MetricCard = ({ label, value, icon, accentColor }: MetricCardProps)
   // Default accent colors based on label
   const getAccentColorForLabel = (label: string): string => {
     switch (label) {
-      case 'CPU Usage': return 'var(--accent-blue)';
-      case 'Memory Usage': return 'var(--accent-blue)'; // Blue for memory as requested
-      case 'Disk Usage': return 'var(--color-warning)'; // Amber for disk
-      case 'Hostname': return 'var(--accent-blue)';
-      case 'Platform': return 'var(--accent-blue)';
-      case 'Boot Time': return 'var(--accent-blue)';
+      case 'CPU Usage': return '#10B981';
+      case 'Memory Usage': return '#8B5CF6';
+      case 'Disk Usage': return '#F59E0B';
+      case 'Hostname': return '#10B981';
+      case 'Platform': return '#6366F1';
+      case 'Boot Time': return '#94A3B8';
       default: return 'var(--text-secondary)';
     }
   };

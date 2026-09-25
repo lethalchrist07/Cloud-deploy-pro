@@ -1,0 +1,178 @@
+.pipeline-meta-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.28);
+  color: var(--accent-mint);
+  padding: 0.4rem 0.8rem;
+  border-radius: var(--border-radius-sm);
+  font-size: 0.82rem;
+  font-weight: 600;
+  font-family: var(--font-mono);
+}
+
+.pipeline-context-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  background: var(--bg-secondary);
+  border: var(--border);
+  border-radius: var(--border-radius);
+  padding: 0.8rem 1.2rem;
+  margin-bottom: 1.25rem;
+  font-size: 0.82rem;
+}
+
+.context-item {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--text-muted);
+}
+
+.context-icon {
+  color: var(--accent-mint);
+}
+
+.context-item strong {
+  color: var(--text-primary);
+}
+
+.context-item code {
+  color: var(--text-secondary);
+  background: var(--bg-tertiary);
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+}
+
+.pipeline-flow-container {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.75rem;
+}
+
+.pipeline-stage-card {
+  background: var(--bg-secondary);
+  border: var(--border);
+  border-radius: var(--border-radius);
+  padding: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 0.75rem;
+  transition: all 0.2s ease;
+}
+
+.pipeline-stage-card:hover {
+  border-color: #2d3748;
+  background: var(--bg-hover);
+}
+
+.stage-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.stage-num {
+  font-size: 0.7rem;
+  font-family: var(--font-mono);
+  color: var(--accent-mint);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+.stage-duration {
+  font-size: 0.75rem;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  background: var(--bg-tertiary);
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+}
+
+.stage-name-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.stage-status-icon.passed {
+  color: var(--color-success);
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+}
+
+.stage-name {
+  font-size: 0.88rem;
+  color: var(--text-primary);
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.stage-details {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+  margin: 0;
+  flex-grow: 1;
+}
+
+.stage-tools-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  padding-top: 0.5rem;
+  border-top: var(--border);
+}
+
+.tool-pill {
+  font-size: 0.68rem;
+  font-family: var(--font-mono);
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  padding: 0.2rem 0.45rem;
+  border-radius: 4px;
+  border: var(--border);
+}
+
+@media (max-width: 1050px) {
+  .pipeline-flow-container {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 650px) {
+  .pipeline-flow-container {
+    grid-template-columns: 1fr;
+  }
+}
+.pipeline-unavailable {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: var(--border);
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+.pipeline-unavailable svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+
+.pipeline-status-pill, .stage-state { color: var(--text-muted); font-size: 0.7rem; text-transform: uppercase; }
+.pipeline-status-pill.success, .stage-state.success { color: var(--accent-mint); }
+.pipeline-status-pill.failed, .stage-state.failed { color: #fb7185; }
+.pipeline-status-pill.building, .pipeline-status-pill.built, .pipeline-status-pill.starting, .pipeline-status-pill.health_check,
+.stage-state.building, .stage-state.starting, .stage-state.health_check { color: #fbbf24; }
+.pipeline-stage-card { min-width: 0; }
+.stage-status-icon.failed { color: #fb7185; flex-shrink: 0; }
+.stage-status-icon.pending { color: #6b7280; flex-shrink: 0; }
+.stage-status-icon.loading { color: #fbbf24; flex-shrink: 0; }
+.stage-state { background: var(--bg-tertiary); border-radius: 4px; padding: 0.15rem 0.4rem; }
+.pipeline-context-bar .context-item > span { color: var(--text-muted); }
+.pipeline-error { margin-bottom: 0.8rem; color: #fb7185; }

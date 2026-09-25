@@ -1,6 +1,17 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Plus, RefreshCw } from 'lucide-react';
+import { useCallback, useState } from 'react';
+import {
+  Plus,
+  RefreshCw,
+  Trash2,
+  Loader2,
+  ExternalLink,
+  Settings as SettingsIcon,
+  Clock,
+  Zap,
+  Activity,
+  Terminal,
+  GitBranch
+} from 'lucide-react';
 import { ApplicationCard } from '../components/ApplicationCard';
 import { AddApplicationModal } from '../components/AddApplicationModal';
 import './Applications.css';
@@ -16,116 +27,97 @@ interface Application {
   status: string;
   created_at: string;
   updated_at: string;
+  // Additional fields we might want to show
+  last_deployment?: string;
+  health_status?: string;
+  version?: string;
 }
 
-const Applications = () => {
-  const navigate = useNavigate();
-  const [applications, setApplications] = useState<Application[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const [showAddModal, setShowAddModal] = useState<boolean>(false);
-  const [selectedApp, setSelectedApp] = useState<Application | null>(null);
+interface ApplicationsProps {
+  applications: Application[];
+  isLoading: boolean;
+  error: string | null;
+  fetchApplications: () => Promise<void>;
+  selectedAppId: string;
+  setSelectedAppId: (id: string) => void;
+  isDeploying: boolean;
+  deployingId: string | null;
+  handleTriggerDeploy: () => Promise<void>;
+  createApplication: (applicationData: Omit<Application, 'id' | 'status' | 'created_at' | 'updated_at'>) => Promise<Application>;
+  deleteApplication: (id: string) => Promise<void>;
+  deployApplication: (id: string) => Promise<void>;
+  handleQuickDeploy: (appId: string) => Promise<void>;
+  showAddModal: boolean;
+  setShowAddModal: (show: boolean) => void;
+}
 
-  // Fetch applications from backend
-  const fetchApplications = async () => {
+export const Applications = ({
+  applications,
+  isLoading,
+  error,
+  fetchApplications,
+  selectedAppId,
+  setSelectedAppId,
+  isDeploying,
+  deployingId,
+  handleTriggerDeploy,
+  createApplication,
+  deleteApplication,
+  deployApplication,
+  handleQuickDeploy,
+  showAddModal,
+  setShowAddModal
+}: ApplicationsProps) => {
+  const handleRefresh = useCallback(async () => {
+    await fetchApplications();
+  }, [fetchApplications]);
+
+  const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
+
+  const handleViewApplication = (app: Application) => {
+    setSelectedApplication(app);
+    // In a real implementation, this might navigate to a detailed view
+    // For now, we'll just select it in the UI
+  };
+
+  const handleShowLogs = (appId: string) => {
+    // Navigate to logs page with filtering for this application
+    // This would be implemented with proper routing/query params
+  };
+
+  const handleRestartApplication = async (appId: string) => {
+    // In a real implementation, this would stop and restart the container
+    // For now, we'll simulate by redeploying
     try {
-      setLoading(true);
-      const response = await fetch('http://localhost:8000/applications');
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-      const data = await response.json();
-      setApplications(data);
-      setLoading(false);
+      await deployApplication(appId);
     } catch (err) {
-      console.error('Error fetching applications:', err);
-      setError('Failed to load applications');
-      setLoading(false);
+      // Error handling would be done by the deployApplication function
     }
   };
 
-  // Create new application
-  const createApplication = async (applicationData: Omit<Application, 'id' | 'status' | 'created_at' | 'updated_at'>) => {
-    try {
-      const response = await fetch('http://localhost:8000/applications', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(applicationData),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const newApp = await response.json();
-      setApplications(prev => [...prev, newApp]);
-      setShowAddModal(false);
-      return newApp;
-    } catch (err) {
-      console.error('Error creating application:', err);
-      throw err;
-    }
+  const getStatusBadgeClass = (status: string): string => {
+    const lowerStatus = status.toLowerCase();
+    if (lowerStatus === 'connected' || lowerStatus === 'active') return 'status-badge status-healthy';
+    if (lowerStatus === 'disconnected' || lowerStatus === 'inactive' || lowerStatus === 'error') return 'status-badge status-error';
+    return 'status-badge status-warning';
   };
 
-  // Delete application
-  const deleteApplication = async (id: string) => {
-    try {
-      const response = await fetch(`http://localhost:8000/applications/${id}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      setApplications(prev => prev.filter(app => app.id !== id));
-      if (selectedApp?.id === id) {
-        setSelectedApp(null);
-      }
-    } catch (err) {
-      console.error('Error deleting application:', err);
-      throw err;
-    }
+  const getDeploymentStatusText = (app: Application): string => {
+    // This would ideally come from deployment data
+    // For now, we'll return a placeholder based on app status
+    return app.status.toLowerCase() === 'connected' ? 'Ready for Deployment' : 'Not Connected';
   };
-
-  // Deploy application
-  const deployApplication = async (app: Application) => {
-    try {
-      setSelectedApp(app);
-      const response = await fetch(`http://localhost:8000/applications/${app.id}/deploy`, {
-        method: 'POST',
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const result = await response.json();
-      navigate(`/deployment`);
-      return result;
-    } catch (err) {
-      console.error('Error deploying application:', err);
-      throw err;
-    }
-  };
-
-  useEffect(() => {
-    fetchApplications();
-
-    // Poll for updates every 10 seconds
-    const interval = setInterval(fetchApplications, 10000);
-    return () => clearInterval(interval);
-  }, []);
 
   return (
     <div className="applications-page">
       <div className="page-header">
         <div className="page-title">
-          <h2>Applications</h2>
+          <div className="page-icon">
+            <Database size={22} />
+          </div>
+          <h2>Application Management</h2>
           <p className="page-description">
-            Connect and manage your application repositories for deployment
+            Manage your deployed applications, monitor their status, and control deployments.
           </p>
         </div>
         <div className="page-actions">
@@ -133,52 +125,235 @@ const Applications = () => {
             className="btn btn-primary"
             onClick={() => setShowAddModal(true)}
           >
-            <Plus size={18} /> Add Application
+            <Plus size={20} /> New Application
           </button>
 
           <button
             className="btn btn-secondary"
-            onClick={() => {
-              setLoading(true);
-              fetchApplications().finally(() => setLoading(false));
-            }}
+            onClick={handleRefresh}
+            disabled={isLoading}
           >
-            <RefreshCw size={18} /> Refresh
+            <RefreshCw size={20} /> Refresh Applications
           </button>
         </div>
       </div>
 
       {error && (
-        <div className="error-alert">
+        <div className="error-alert" role="alert">
+          <AlertCircle size={20} />
           <div className="error-message">
-            <strong>Error:</strong> {error}
+            <strong>Error loading applications:</strong> {error}
           </div>
         </div>
       )}
 
-      {loading && !applications.length && !error ? (
-        <div className="loading-indicator">Loading applications...</div>
+      {isLoading && !applications.length && !error ? (
+        <div className="loading-indicator">
+          <Loader2 size={24} className="spin" />
+          <p>Loading applications...</p>
+        </div>
+      ) : !applications.length && error ? (
+        <div className="error-alert" role="alert">
+          <AlertCircle size={20} />
+          <div className="error-message">
+            <strong>Error:</strong> {error}
+          </div>
+        </div>
       ) : (
-        <div className="applications-grid">
-          {applications.length > 0 ? (
-            applications.map(app => (
-              <ApplicationCard
-                key={app.id}
-                app={app}
-                onDelete={deleteApplication}
-                onDeploy={deployApplication}
-                onSelect={() => setSelectedApp(app)}
-                selected={selectedApp?.id === app.id}
-              />
-            ))
-          ) : (
-            <div className="empty-state">
-              <h3>No applications connected yet</h3>
-              <p className="empty-state-description">
-                Click &#34;Add Application&#34; to connect your first repository
-              </p>
+        <div className="applications-container">
+          {/* Applications Statistics */}
+          <div className="applications-stats">
+            <div className="stat-item">
+              <h3>{applications.length}</h3>
+              <p>Total Applications</p>
             </div>
-          )}
+            <div className="stat-item">
+              <h3>{applications.filter(app => app.status.toLowerCase() === 'connected').length}</h3>
+              <p>Connected</p>
+            </div>
+            <div className="stat-item">
+              <h3>{isDeploying ? '1' : '0'}</h3>
+              <p>Currently Deploying</p>
+            </div>
+          </div>
+
+          {/* Applications List */}
+          <div className="applications-list">
+            {applications.length > 0 ? (
+              applications.map(app => (
+                <ApplicationCard
+                  key={app.id}
+                  app={app}
+                  onDelete={deleteApplication}
+                  onDeploy={deployApplication}
+                  deploying={deployingId === app.id}
+                  onView={() => handleViewApplication(app)}
+                  onLogs={() => handleShowLogs(app.id)}
+                  onRestart={() => handleRestartApplication(app.id)}
+                />
+              ))
+            ) : (
+              <div className="empty-state-large">
+                <div className="empty-state-icon">
+                  <Database size={48} />
+                </div>
+                <h3>No Applications Configured</h3>
+                <p className="empty-state-description">
+                  Get started by connecting your first repository. CloudDeploy Pro will
+                  inspect your GitHub repository, build Docker images, and manage deployments.
+                </p>
+                <div className="empty-state-actions">
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => setShowAddModal(true)}
+                  >
+                    <Plus size={20} /> Add First Application
+                  </button>
+                  <button
+                    className="btn btn-outline"
+                    onClick={() => {/* Navigate to docs or help */}}
+                  >
+                    <ExternalLink size={16} />
+                    <span>Learn More</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Selected Application Detail View */}
+      {selectedApplication && (
+        <div className="application-detail-panel">
+          <div className="application-detail-header">
+            <h3>{selectedApplication.name}</h3>
+            <button
+              className="btn btn-icon"
+              onClick={() => setSelectedApplication(null)}
+              title="Close Details"
+            >
+              <X size={20} />
+            </button>
+          </div>
+          <div className="application-detail-content">
+            <div className="detail-section">
+              <h4>Repository Information</h4>
+              <div className="detail-item">
+                <span className="detail-label">Name:</span>
+                <span className="detail-value">{selectedApplication.name}</span>
+              </div>
+              <div className="detail-item">
+                <span className="detail-label">Repository:</span>
+                <a
+                  href={selectedApplication.repository_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="detail-value repo-link"
+                >
+                  {selectedApplication.repository_url}
+                </a>
+              </div>
+              <div className="detail-item">
+                <span className="detail-label">Branch:</span>
+                <span className="detail-value">
+                  <GitBranch size={16} /> {selectedApplication.branch}
+                </span>
+              </div>
+              <div className="detail-item">
+                <span className="detail-label">Environment:</span>
+                <span className="detail-value">
+                  <span className={getStatusBadgeClass(selectedApplication.environment)}>
+                    {selectedApplication.environment}
+                  </span>
+                </span>
+              </div>
+            </div>
+
+            <div className="detail-section">
+              <h4>Deployment Information</h4>
+              <div className="detail-item">
+                <span className="detail-label">Dockerfile Path:</span>
+                <span className="detail-value">{selectedApplication.dockerfile_path}</span>
+              </div>
+              <div className="detail-item">
+                <span className="detail-label">Terraform Path:</span>
+                <span className="detail-value">{selectedApplication.terraform_path}</span>
+              </div>
+              <div className="detail-item">
+                <span className="detail-label">Status:</span>
+                <span className="detail-value">
+                  <span className={getStatusBadgeClass(selectedApplication.status)}>
+                    {selectedApplication.status}
+                  </span>
+                </span>
+              </div>
+              <div className="detail-item">
+                <span className="detail-label">Last Updated:</span>
+                <span className="detail-value">
+                  {new Date(selectedApplication.updated_at).toLocaleString()}
+                </span>
+              </div>
+              <div className="detail-item">
+                <span className="detail-label">Created:</span>
+                <span className="detail-value">
+                  {new Date(selectedApplication.created_at).toLocaleString()}
+                </span>
+              </div>
+            </div>
+
+            <div className="detail-section">
+              <h4>Actions</h4>
+              <div className="actions-group">
+                <button
+                  className="btn btn-success"
+                  onClick={() => deployApplication(selectedApplication.id)}
+                  disabled={isDeploying}
+                >
+                  {isDeploying ? <Loader2 size={16} className="spin" /> : <Rocket size={16} />}
+                  Deploy Application
+                </button>
+
+                <button
+                  className="btn btn-warning"
+                  onClick={() => handleRestartApplication(selectedApplication.id)}
+                  disabled={isDeploying}
+                >
+                  <Zap size={16} />
+                  Restart Application
+                </button>
+
+                <button
+                  className="btn btn-info"
+                  onClick={() => handleShowLogs(selectedApplication.id)}
+                >
+                  <Terminal size={16} />
+                  View Logs
+                </button>
+
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => {/* Navigate to settings for this app */}}
+                >
+                  <SettingsIcon size={16} />
+                  Application Settings
+                </button>
+
+                <button
+                  className="btn btn-danger"
+                  onClick={() => {
+                    if (window.confirm(`Delete application "${selectedApplication.name}"?`)) {
+                      deleteApplication(selectedApplication.id);
+                      setSelectedApplication(null);
+                    }
+                  }}
+                >
+                  <Trash2 size={16} />
+                  Delete Application
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

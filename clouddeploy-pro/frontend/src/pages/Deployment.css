@@ -20,12 +20,9 @@
 
 .page-title h2 {
   font-size: 1.25rem;
-  font-weight: 800;
+  font-weight: 600;
   font-family: var(--font-display);
-  background: linear-gradient(135deg, var(--accent-purple-light) 0%, var(--accent-cyan) 60%, var(--accent-rose) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--text-primary);
 }
 
 .page-description {
@@ -52,24 +49,11 @@
   gap: 0.65rem;
 }
 
-.refresh-button {
-  background: linear-gradient(135deg, var(--accent-purple) 0%, var(--accent-purple-light) 100%);
-  color: white;
-  border: 1px solid rgba(168, 85, 247, 0.5);
-  padding: 0.35rem 0.75rem;
-  border-radius: var(--border-radius-sm);
-  font-weight: 600;
-  font-size: 0.775rem;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-}
-
-.refresh-button:hover {
-  filter: brightness(1.2);
-  box-shadow: 0 0 12px rgba(147, 51, 234, 0.5);
+/* Actions Grid for Quick Actions */
+.actions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 1rem;
 }
 
 /* Responsive adjustments */
@@ -78,3 +62,128 @@
     grid-template-columns: 1fr;
   }
 }
+.deployment-log-unavailable {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.deployment-log-unavailable svg { flex: 0 0 auto; }
+.deployment-limitation {
+  margin-bottom: 1rem;
+  padding: 0.9rem 1rem;
+  border: var(--border);
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+
+.deployment-actions-section { margin-top: 1rem; }
+
+.deployment-summary, .deployment-scope-note, .deployment-log-empty {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  margin: 0.3rem 0 0;
+}
+
+.deployment-state-badge, .stage-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: var(--border);
+  border-radius: 999px;
+  padding: 0.3rem 0.65rem;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.deployment-state-badge.success, .stage-state.success, .deployment-stage-status.success, .health-result.healthy { color: var(--accent-mint); }
+.deployment-state-badge.failed, .stage-state.failed, .deployment-stage-status.failed, .health-result.unhealthy { color: #fb7185; }
+.deployment-state-badge.building, .deployment-state-badge.built, .deployment-state-badge.starting, .deployment-state-badge.health_check,
+.stage-state.building, .stage-state.starting, .stage-state.health_check { color: #fbbf24; }
+
+.deployment-stages { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.65rem; }
+.deployment-stage { display: flex; gap: 0.7rem; min-width: 0; padding: 0.8rem; background: var(--bg-secondary); border: var(--border); border-radius: var(--border-radius); transition: all var(--transition-fast); }
+.deployment-stage:hover { border-color: #2d3748; background: var(--bg-hover); }
+.deployment-stage-number { color: var(--accent-mint); font-family: var(--font-mono); font-size: 0.75rem; }
+.deployment-stage > div { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; min-width: 0; }
+.deployment-stage strong { color: var(--text-primary); font-size: 0.84rem; }
+.deployment-stage-status { color: var(--text-muted); font-size: 0.68rem; font-weight: 700; }
+.deployment-stage p { flex: 1 0 100%; margin: 0; color: var(--text-muted); font-size: 0.75rem; overflow-wrap: anywhere; }
+
+.docker-result-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.65rem; margin-top: 0.8rem; }
+.docker-result-item { display: flex; flex-direction: column; align-items: flex-start; gap: 0.28rem; min-width: 0; padding: 0.8rem; background: var(--bg-secondary); border: var(--border); border-radius: var(--border-radius); transition: all var(--transition-fast); }
+.docker-result-item:hover { border-color: #2d3748; background: var(--bg-hover); }
+.docker-result-item > span { color: var(--text-muted); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; }
+.docker-result-item code, .docker-result-item strong { color: var(--text-primary); font-size: 0.8rem; overflow-wrap: anywhere; }
+.docker-result-item small, .docker-result-item a { color: var(--text-muted); font-size: 0.72rem; overflow-wrap: anywhere; }
+.deployment-log-list { display: flex; flex-direction: column; max-height: 420px; overflow: auto; }
+.deployment-log-entry { display: grid; grid-template-columns: auto 4rem 6rem minmax(0, 1fr); gap: 0.55rem; padding: 0.45rem 0; border-bottom: var(--border); font-family: var(--font-mono); font-size: 0.72rem; }
+.deployment-log-entry time, .deployment-log-stage { color: var(--text-muted); }
+.deployment-log-level { color: var(--accent-mint); font-weight: 700; }
+.deployment-log-level.warning { color: #fbbf24; }
+.deployment-log-level.error { color: #fb7185; }
+.deployment-log-message { min-width: 0; overflow-wrap: anywhere; white-space: pre-wrap; }
+
+@media (max-width: 750px) {
+  .deployment-stages { grid-template-columns: 1fr; }
+  .deployment-log-entry { grid-template-columns: auto 3.5rem minmax(0, 1fr); }
+  .deployment-log-stage { display: none; }
+}
+
+.deploy-action-bar {
+  margin-bottom: 1.25rem;
+}
+
+.deploy-bar-content {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+}
+
+.deploy-form-group {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+  min-width: 280px;
+}
+
+.deploy-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.deploy-select {
+  flex: 1;
+  background: var(--bg-tertiary);
+  border: var(--border);
+  color: var(--text-primary);
+  border-radius: var(--border-radius-sm);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+}
+
+.deploy-trigger-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.55rem 1.1rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+

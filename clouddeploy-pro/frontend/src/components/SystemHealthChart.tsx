@@ -1,90 +1,110 @@
-import { useEffect, useState } from 'react';
+import './SystemHealthChart.css'
 
 interface SystemData {
-  cpu_usage: number;
-  memory_usage: number;
-  disk_usage: number;
+  cpu_usage: number
+  memory_usage: number
+  disk_usage: number
+  memory_total_gb?: number
+  memory_used_gb?: number
+  memory_free_gb?: number
+  disk_total_gb?: number
+  disk_used_gb?: number
+  disk_free_gb?: number
+  cpu_cores_logical?: number
+  cpu_cores_physical?: number
+  cpu_freq_mhz?: number
 }
 
-export const SystemHealthChart = ({ data }: { data: SystemData | null }) => {
-  const [metrics, setMetrics] = useState([
-    { name: 'CPU', value: 17.4 },
-    { name: 'Memory', value: 72.4 },
-    { name: 'Disk', value: 33.7 },
-  ]);
+const statusFor = (value: number) => (value >= 90 ? 'Critical' : value >= 75 ? 'Elevated' : 'Healthy')
 
-  useEffect(() => {
-    if (data) {
-      const cpu = typeof data.cpu_usage === 'number' ? data.cpu_usage : 17.4;
-      const mem = typeof data.memory_usage === 'number' ? data.memory_usage : 72.4;
-      const disk = typeof data.disk_usage === 'number' ? data.disk_usage : 33.7;
-      setMetrics([
-        { name: 'CPU', value: cpu },
-        { name: 'Memory', value: mem },
-        { name: 'Disk', value: disk },
-      ]);
-    }
-  }, [data]);
+export const SystemHealthChart = ({ data, error = false }: { data: SystemData | null; error?: boolean }) => {
+  if (!data) {
+    return (
+      <div className="control-panel health-panel">
+        <div className="component-heading">
+          <div>
+            <p className="eyebrow">Host Telemetry</p>
+            <h2 className="topic-title">System Health & Resource Capacity</h2>
+          </div>
+        </div>
+        <p className="empty-state">{error ? 'System telemetry is unavailable.' : 'Loading system telemetry…'}</p>
+      </div>
+    )
+  }
+
+  const memoryDetail = data.memory_total_gb
+    ? `${data.memory_used_gb?.toFixed(1) || '0'} GB of ${data.memory_total_gb.toFixed(1)} GB used (${data.memory_free_gb?.toFixed(1) || '0'} GB free)`
+    : 'System virtual memory pool'
+
+  const diskDetail = data.disk_total_gb
+    ? `${data.disk_used_gb?.toFixed(1) || '0'} GB of ${data.disk_total_gb.toFixed(1)} GB used (${data.disk_free_gb?.toFixed(1) || '0'} GB available)`
+    : 'Root volume storage space'
+
+  const cpuDetail = data.cpu_cores_logical
+    ? `${data.cpu_cores_logical} Logical Cores (${data.cpu_cores_physical || 0} Physical)${data.cpu_freq_mhz ? ` @ ${(data.cpu_freq_mhz / 1000).toFixed(2)} GHz` : ''}`
+    : 'Host processor utilization'
+
+  const metrics = [
+    {
+      label: 'CPU Load',
+      value: data.cpu_usage,
+      detail: cpuDetail,
+      status: statusFor(data.cpu_usage),
+    },
+    {
+      label: 'Memory Usage',
+      value: data.memory_usage,
+      detail: memoryDetail,
+      status: statusFor(data.memory_usage),
+    },
+    {
+      label: 'Storage Capacity',
+      value: data.disk_usage,
+      detail: diskDetail,
+      status: statusFor(data.disk_usage),
+    },
+  ]
 
   return (
-    <div className="card">
-      <div className="card-header">
-        <h3 className="card-title">System Health</h3>
-      </div>
-      <div className="card-content">
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-around',
-          alignItems: 'flex-end',
-          height: '180px',
-          paddingTop: '1rem',
-          paddingBottom: '0.5rem',
-          gap: '1.5rem'
-        }}>
-          {metrics.map((item, index) => {
-            const fillPercentage = Math.min(Math.max(item.value, 8), 100);
-            return (
-              <div key={index} style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                flex: 1,
-                height: '100%'
-              }}>
-                {/* Vertical Bar Container */}
-                <div style={{
-                  position: 'relative',
-                  width: '42px',
-                  flex: 1,
-                  backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                  borderRadius: '6px 6px 0 0',
-                  display: 'flex',
-                  alignItems: 'flex-end',
-                  overflow: 'hidden',
-                  border: '1px solid rgba(139, 92, 246, 0.15)'
-                }}>
-                  {/* Animated Gradient Bar Fill */}
-                  <div style={{
-                    width: '100%',
-                    height: `${fillPercentage}%`,
-                    background: 'linear-gradient(180deg, #00F2FE 0%, #38BDF8 40%, #8B5CF6 80%, #4C1D95 100%)',
-                    borderRadius: '4px 4px 0 0',
-                    transition: 'height 500ms ease-in-out',
-                    boxShadow: '0 0 12px rgba(0, 242, 254, 0.3)'
-                  }} />
-                </div>
-                {/* Labels */}
-                <div style={{ marginTop: '0.5rem', textAlign: 'center' }}>
-                  <div style={{ fontSize: '0.75rem', color: '#94A3B8', fontWeight: 600 }}>{item.name}</div>
-                  <div style={{ fontSize: '0.8rem', color: '#00F2FE', fontWeight: 700, fontFamily: 'var(--font-mono)' }}>
-                    {item.value.toFixed(1)}%
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+    <div className="control-panel health-panel">
+      <div className="component-heading">
+        <div>
+          <p className="eyebrow">Host Health & Telemetry</p>
+          <h2 className="topic-title">System Health & Resource Capacity</h2>
+          <p className="topic-description">
+            CPU, memory, and disk utilization reported by the backend host.
+          </p>
         </div>
+        <span className="telemetry-badge">Backend host telemetry</span>
+      </div>
+
+      <div className="health-cards-grid">
+        {metrics.map((metric) => (
+          <div className="health-card" key={metric.label}>
+            <div className="health-card-header">
+              <span className="metric-name">{metric.label}</span>
+              <span className={`inline-status-badge ${metric.status.toLowerCase()}`}>
+                <span className="status-dot" />
+                {metric.status}
+              </span>
+            </div>
+
+            <div className="health-card-metric">
+              <span className="big-metric-num">{metric.value.toFixed(1)}</span>
+              <span className="metric-unit">%</span>
+            </div>
+
+            <div className="usage-track-bar">
+              <div
+                className={`usage-fill ${metric.status.toLowerCase()}`}
+                style={{ width: `${Math.min(Math.max(metric.value, 0), 100)}%` }}
+              />
+            </div>
+
+            <p className="metric-subdetail">{metric.detail}</p>
+          </div>
+        ))}
       </div>
     </div>
-  );
-};
+  )
+}

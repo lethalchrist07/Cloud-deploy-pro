@@ -1,0 +1,65 @@
+# Root-level .dockerignore for all builds
+
+# Version control
+.git
+.gitignore
+.gitattributes
+.github
+
+# Documentation & logs
+*.md
+*.log
+logs/
+docs/
+
+# IDE & editor files
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.DS_Store
+.env.local
+
+# Build artifacts
+dist/
+build/
+node_modules/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv
+
+# Testing
+.pytest_cache
+.coverage
+htmlcov/
+coverage/
+.nyc_output
+
+# CI/CD
+.github
+.gitlab-ci.yml
+.circleci
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+.tfvars
+
+# Docker
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# Misc
+.devin
+.claude
+.env.example
+test-*.html
+*.backup
